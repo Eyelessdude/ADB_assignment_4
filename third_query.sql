@@ -1,6 +1,6 @@
 SET serveroutput on;
 
-CREATE OR REPLACE PROCEDURE measureExecutionTime1(executedQuery IN SYS_REFCURSOR, minTime OUT FLOAT, maxTime OUT FLOAT, avgTime OUT FLOAT)
+CREATE OR REPLACE PROCEDURE measureExecutionTime3(executedQuery IN SYS_REFCURSOR, minTime OUT FLOAT, maxTime OUT FLOAT, avgTime OUT FLOAT)
 IS
 start_time FLOAT;
 end_time FLOAT;
@@ -11,16 +11,12 @@ localMin FLOAT := 1000000;
 localAvg FLOAT := 0;
 
 /* Define cursor with query to be executed */
-CURSOR cc IS SELECT ord.* FROM "Order" ord 
-                JOIN Client cli ON ord.clientId = cli.clientId
-                JOIN Review rev ON cli.clientId = rev.clientId AND rev.stars BETWEEN 0 AND 3
-                JOIN product_order prod_order ON ord.orderId = prod_order.orderId
-                JOIN (SELECT product.productId, product.title FROM Product product
-                        JOIN product_specialoffer prod_offer ON prod_offer.productId = product.productId
-                        JOIN SpecialOffer offer ON offer.offerId = prod_offer.specialOfferId
-                        WHERE offer.startdate >= '27.02.20 04:51:36' AND offer.enddate <= '17.12.20 00:08:04'
-                        GROUP BY product.productid, product.title) prod ON prod.productId = prod_order.productId
-                ORDER BY ord.status, ord.total DESC;
+CURSOR cc IS SELECT * FROM "Order" ord
+    JOIN (SELECT * FROM Product_Order prod_order
+            JOIN Product product ON prod_order.productId = product.productId
+            JOIN (SELECT * FROM Review rev WHERE rev.stars >= 4) review ON review.productId = product.productId) products ON products.orderId = ord.orderId
+    JOIN Payment payment ON payment.paymentid = ord.paymentId WHERE payment.cardType LIKE '%visa%'
+    ORDER BY ord.orderId;
 
 TYPE fetched_table_type IS TABLE OF cc%ROWTYPE;
 fetched_table fetched_table_type;
@@ -75,12 +71,12 @@ avgTime FLOAT := 0;
 queryCursor SYS_REFCURSOR;
 
 BEGIN
-measureexecutiontime1(queryCursor, minTime, maxTime, avgTime);
+measureexecutiontime3(queryCursor, minTime, maxTime, avgTime);
 dbms_output.put_line('Min: ' || mintime);
 dbms_output.put_line('Max: ' || maxtime);
 dbms_output.put_line('Average: ' || avgtime); 
 
-INSERT INTO LOGGER(queryName, minTime, maxTime, avgTime) VALUES('first_query', minTime, maxTime, avgTime);
+INSERT INTO LOGGER(queryName, minTime, maxTime, avgTime) VALUES('third_query', minTime, maxTime, avgTime);
 COMMIT;
 
 END;

@@ -11,7 +11,7 @@ localMin FLOAT := 1000000;
 localAvg FLOAT := 0;
 
 /* Define cursor with query to be executed */
-CURSOR cc IS SELECT payment.* FROM Payment payment
+CURSOR cc IS SELECT COUNT(payment.paymentId) FROM Payment payment
 JOIN Address paymentAddress ON payment.addressid=paymentAddress.addressid
 JOIN (SELECT adr.* FROM Address adr 
         JOIN client cli ON cli.clientId=adr.clientId) clientAddress ON clientAddress.line1=paymentAddress.line1 
@@ -33,8 +33,10 @@ BEGIN
 OPEN cc;
 FETCH cc BULK COLLECT INTO fetched_table;
 CLOSE cc;
+ROLLBACK;
 
 FOR loopCounter IN 1..10 LOOP
+    ROLLBACK;
     EXECUTE IMMEDIATE 'ALTER SYSTEM FLUSH BUFFER_CACHE';
     EXECUTE IMMEDIATE 'ALTER SYSTEM FLUSH SHARED_POOL';
     OPEN cc;
@@ -61,10 +63,9 @@ FOR loopCounter IN 1..10 LOOP
         localMin := resulted_time;
         minTime := localMin;
     END IF;
-    
-    ROLLBACK;
 END LOOP;
     avgTime := localAvg / iterationsAmount;
+    ROLLBACK;
 END;
 /
 show errors
@@ -82,7 +83,8 @@ dbms_output.put_line('Min: ' || mintime);
 dbms_output.put_line('Max: ' || maxtime);
 dbms_output.put_line('Average: ' || avgtime); 
 
-INSERT INTO LOGGER(minTime, maxTime, avgTime) VALUES(minTime, maxTime, avgTime);
+INSERT INTO LOGGER(queryName, minTime, maxTime, avgTime) VALUES('second_query', minTime, maxTime, avgTime);
+COMMIT;
 
 END;
 /
