@@ -11,12 +11,18 @@ localMin FLOAT := 1000000;
 localAvg FLOAT := 0;
 
 /* Define cursor with query to be executed */
-CURSOR cc IS SELECT * FROM "Order" ord
-    JOIN (SELECT * FROM Product_Order prod_order
-            JOIN Product product ON prod_order.productId = product.productId
-            JOIN (SELECT * FROM Review rev WHERE rev.stars >= 4) review ON review.productId = product.productId) products ON products.orderId = ord.orderId
-    JOIN Payment payment ON payment.paymentid = ord.paymentId WHERE payment.cardType LIKE '%visa%'
-    ORDER BY ord.orderId;
+CURSOR cc IS SELECT ord.status FROM "Order" ord WHERE ord.orderId IN(
+    SELECT prod_order.orderId FROM Product_Order prod_order JOIN Product product ON prod_order.productId = product.productId
+    WHERE product.productId IN(
+        SELECT review.productID FROM Review review
+        WHERE (review.stars >= 4 OR review.title LIKE 'astonishing%' OR review.title LIKE '%perfect%')
+        OR review.clientId IN (
+            SELECT client.clientId FROM Client client
+            WHERE client.email LIKE '%yahoo.com' OR client.email LIKE '%biz.net'
+        )
+        )
+    )
+    AND (ord.orderdate NOT LIKE '01.01.2020%' AND ord.orderdate LIKE '19.12.2019%');
 
 TYPE fetched_table_type IS TABLE OF cc%ROWTYPE;
 fetched_table fetched_table_type;

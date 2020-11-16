@@ -21,20 +21,15 @@ FOR loopCounter IN 1..10 LOOP
     start_time := dbms_utility.get_time;
     dbms_output.put_line('Start: ' || start_time); 
     
-    UPDATE Product prod
-    SET prod.price = (prod.price * 1.2)
-    WHERE prod.productId IN (
-        SELECT DISTINCT product.productId FROM Product product
-        JOIN product_order prod_order ON prod_order.productId = product.productId
-        JOIN (SELECT ord.* FROM "Order" ord WHERE ord.clientId IN (
-            SELECT ord.clientId FROM "Order" ord
-            JOIN Client client ON ord.clientId = client.clientId
-            JOIN Address address ON client.clientid = address.clientId WHERE address."STATE" LIKE '%Connecticut%'
-            GROUP BY ord.clientId
-            HAVING COUNT(ord.clientId) >= 5)
-        ) ord ON ord.orderId = prod_order.orderId
-        WHERE NOT EXISTS(SELECT * FROM product_specialoffer prod_offer WHERE prod_offer.productId = product.productId)
-    );
+    UPDATE Address adr
+    SET adr.city = 'Czechowice-Dziedzice', adr.postalcode = 69696, adr.state='Poland'
+    WHERE adr.addressId IN (
+        SELECT adr.addressId FROM Address adr WHERE adr.city LIKE '%Port%'
+        OR adr.line1 LIKE '%Trail%'
+    )
+    OR adr.clientId IN (
+        SELECT client.clientId FROM CLient client JOIN Address adr ON client.clientID = adr.clientId 
+        WHERE client.firstname LIKE '%yan%' AND client.firstname NOT LIKE '%ogdan%');
     
     end_time := dbms_utility.get_time;
     dbms_output.put_line('End: ' || end_time); 
