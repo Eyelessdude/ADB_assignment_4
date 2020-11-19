@@ -11,18 +11,13 @@ localMin FLOAT := 1000000;
 localAvg FLOAT := 0;
 
 /* Define cursor with query to be executed */
-CURSOR cc IS SELECT ord.status FROM "Order" ord WHERE ord.orderId IN(
-    SELECT prod_order.orderId FROM Product_Order prod_order JOIN Product product ON prod_order.productId = product.productId
-    WHERE product.productId IN(
-        SELECT review.productID FROM Review review
-        WHERE (review.stars >= 4 OR review.title LIKE 'astonishing%' OR review.title LIKE '%perfect%')
-        OR review.clientId IN (
-            SELECT client.clientId FROM Client client
-            WHERE client.email LIKE '%yahoo.com' OR client.email LIKE '%biz.net'
-        )
-        )
+CURSOR cc IS SELECT product.EAN FROM Product product
+    WHERE product.productId IN (
+        SELECT prod_order.productId FROM product_order prod_order
+        JOIN "Order" ord ON prod_order.orderId = ord.orderId
+        WHERE ord.total < 800 AND ord.dueDate >= '21.02.2020 00:00:00'
     )
-    AND (ord.orderdate NOT LIKE '01.01.2020%' AND ord.orderdate LIKE '19.12.2019%');
+    OR product.price < 450 AND product."STYLE" = 'oxfords';
 
 TYPE fetched_table_type IS TABLE OF cc%ROWTYPE;
 fetched_table fetched_table_type;

@@ -11,16 +11,22 @@ localMin FLOAT := 1000000;
 localAvg FLOAT := 0;
 
 /* Define cursor with query to be executed */
-CURSOR cc IS SELECT product.EAN FROM Product product WHERE product.productId IN (
-        SELECT review.productId FROM Review review WHERE review.clientId IN(
-            SELECT client.clientId FROM Client client
-            WHERE client.email LIKE '%.com%' AND (client.lastName NOT LIKE '%toast%' AND client.firstName LIKE '%tade%')
-        )
-        OR (review.title LIKE '%' || SUBSTR((SELECT product2.title FROM Product product2 GROUP BY product2.title FETCH NEXT 1 ROW ONLY),3, 4) || '%' 
-        OR ((SELECT COUNT(review2.text) FROM Review review2 WHERE review2.text LIKE '%best%') > 3 AND review.stars >= 3)
-        )
-    GROUP BY review.productId);
-
+CURSOR cc IS SELECT ord.status FROM "Order" ord
+                WHERE (ord.duedate >= '03.01.2020 00:00:00' AND ord.orderdate = '01.01.2020 00:00:00')
+                OR (ord.total >= 2500 AND ord.subtotal >= 250
+                        OR ord.paymentId IN(
+                            SELECT payment.paymentId FROM Payment payment
+                            WHERE (
+                                (payment.cardNumber LIKE '%621%' AND expmonth >= 4)
+                                    OR (payment.cardType IN ('visa', 'mastercard', 'amex'))
+                                AND payment.expyear IN (2020, 2021, 2022)
+                            )
+                            OR payment.addressId IN(
+                                SELECT address.addressId FROM Address address
+                                WHERE address.city LIKE '%New%'
+                            )
+                        )
+                );
 
 TYPE fetched_table_type IS TABLE OF cc%ROWTYPE;
 fetched_table fetched_table_type;

@@ -19,7 +19,7 @@ CURSOR cc IS SELECT client.email FROM Client client WHERE client.clientId IN (
                         SELECT client2.clientId FROM Client client2 WHERE client2.clientId IN(
                             SELECT review.clientId FROM Review review 
                                 WHERE review.stars NOT IN (0, 1, 2)
-                                OR review.reviewdate >= '2019.05.02 00:00:00'
+                                OR review.reviewdate >= '02.05.2019 00:00:00'
                         )
                         OR client2.email LIKE '%.com%' OR client2.email LIKE '%.biz%' OR client2.email LIKE '%.net%'
                     )
